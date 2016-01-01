@@ -94,7 +94,7 @@
                 var quest_leader = args[0];
                 var quest_size = args[1];
                 var players_text = args[2];
-                $('#p-'+quest_leader+'-badge').show();
+                $('#p-'+quest_leader+'-badge').css('display','inline');
                 $('#p-'+quest_leader+'-badge').html('Picking Team');
             });
             
@@ -110,7 +110,7 @@
             });
 
             socket2.on('vote confirmation', function(player){
-                $('#p-'+player+'-badge').show();
+                $('#p-'+player+'-badge').css('display', 'inline');
                 $('#p-'+player+'-badge').html('Voted');
             });
 
@@ -138,7 +138,7 @@
             });
 
             socket2.on('qvote placed', function(player){
-                $('#t-'+player+'-badge').show();
+                $('#t-'+player+'-badge').css('display','inline');
                 $('#t-'+player+'-badge').html('Voted');
             });
 
@@ -165,7 +165,7 @@
             });
 
             socket2.on('pick target', function(player){
-                $('#p-'+player+'-badge').show();
+                $('#p-'+player+'-badge').css('display','inline');
                 $('#p-'+player+'-badge').html('Assassin');
             });
 
