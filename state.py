@@ -3,8 +3,9 @@ import math
 import copy
 import random
 import yaml
-from flask_socketio import SocketIO, emit
-from flask import Flask, render_template
+import functools
+from flask_socketio import SocketIO, emit, disconnect
+from flask import Flask, render_template, abort, request
 
 app = Flask(__name__)
 with open("config.yml") as f:
@@ -241,6 +242,15 @@ class AvalonGame:
         joined_players = []
 
 
+def authenticated_only(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        if not request.headers.get('Authentication') == config['secret']:
+            disconnect()
+        else:
+            return f(*args, **kwargs)
+    return wrapped
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -250,8 +260,15 @@ def index():
 # def connect():
 #    emit('connect')
 
+@app.route('/login', methods=['POST'])
+def login():
+    if request.form['apikey'] == config['secret']:
+        user = APIUser()
+        login_user(user)
+    abort(400)
 
 @sio.on('game start request', namespace='/private')
+@authenticated_only
 def start_game(player):
     global game, joined_players
     if player not in joined_players:
@@ -266,6 +283,7 @@ def start_game(player):
 
 
 @sio.on('force game start request', namespace='/private')
+@authenticated_only
 def force_start_game(args):
     global game
     player, players = args
@@ -279,6 +297,7 @@ def force_start_game(args):
 
 
 @sio.on('join game request', namespace='/private')
+@authenticated_only
 def join_game(player):
     if player in joined_players:
         emit('join game error', "You're already in the game, {}.".format(player), broadcast=True, namespace='/public')
@@ -290,24 +309,28 @@ def join_game(player):
 
 
 @sio.on('kill player request', namespace='/private')
+@authenticated_only
 def kill_player(args):
     player, target = args
     game.do_assassin_kill(player, target)
 
 
 @sio.on('propose players', namespace='/private')
+@authenticated_only
 def propose_players(args):
     player, players = args
     game.propose(player, players)
 
 
 @sio.on('vote request', namespace='/private')
+@authenticated_only
 def vote(args):
     player, truefalse = args
     game.vote_on_questers(player, truefalse)
 
 
 @sio.on('qvote request', namespace='/private')
+@authenticated_only
 def qvote(args):
     player, truefalse = args
     game.do_quest_vote(player, truefalse)

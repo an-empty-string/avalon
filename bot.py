@@ -121,7 +121,7 @@ with open(conf_file) as f:
     config = yaml.load(f)
 
 channel = config["irc"]["channel"]
-sio = SocketIO(config["state"]["host"], config["state"]["port"])
+sio = SocketIO(config["state"]["host"], config["state"]["port"], headers={"Authentication":config["secret"]})
 
 bot = AvalonBot()
 public_ns = sio.define(PublicNamespace, '/public')
