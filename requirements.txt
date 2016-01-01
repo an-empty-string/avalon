@@ -1,0 +1,5 @@
+PyYAML
+Flask-SocketIO
+eventlet
+requests
+websocket-client

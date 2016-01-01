@@ -1,16 +1,13 @@
+#!/usr/bin/env python
 from pyrcb import IRCBot
 from socketIO_client import SocketIO, BaseNamespace
 import threading
 import sys
-
 import yaml
-with open(sys.argv[1]) as f:
-    config = yaml.load(f)
 
-channel = config["irc"]["channel"]
-sio = SocketIO(config["state"]["host"], config["state"]["port"])
 
 class AvalonBot(IRCBot):
+
     def on_message(self, message, nickname, channel, is_query):
         if not is_query:
             if message.startswith("!propose "):
@@ -35,6 +32,7 @@ class AvalonBot(IRCBot):
 
 
 class PublicNamespace(BaseNamespace):
+
     def on_game_start_error(self, message):
         bot.send(channel, message)
 
@@ -96,10 +94,11 @@ class PublicNamespace(BaseNamespace):
 
 
 class PrivateNamespace(BaseNamespace):
+
     def on_player_role(self, args):
         player, role_text = args
         bot.send(player, role_text)
-    
+
     def on_vote_error(self, args):
         player, message = args
         bot.send(player, message)
@@ -107,7 +106,7 @@ class PrivateNamespace(BaseNamespace):
     def on_qvote_poke(self, args):
         player, role = args
         bot.send(player, "Please vote with 'pass' or '{}'.".format("pass" if role == "good" else "fail"))
-    
+
     def on_qvote_error(self, args):
         player, message = args
         bot.send(player, message)
@@ -116,16 +115,28 @@ class PrivateNamespace(BaseNamespace):
         player, vote = args
         bot.send(player, "You voted to {} the quest.".format(vote))
 
+# FIXME: kill globals
+conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
+with open(conf_file) as f:
+    config = yaml.load(f)
+
+channel = config["irc"]["channel"]
+sio = SocketIO(config["state"]["host"], config["state"]["port"])
 
 bot = AvalonBot()
 public_ns = sio.define(PublicNamespace, '/public')
 private_ns = sio.define(PrivateNamespace, '/private')
 
-sio_t = threading.Thread(target=sio.wait)
-sio_t.start()
 
-bot.connect(config["irc"]["server"], config["irc"]["port"])
-bot.register(config["irc"]["nick"])
-bot.join(channel)
+def main():
+    sio_t = threading.Thread(target=sio.wait)
+    sio_t.start()
 
-bot.listen()
+    bot.connect(config["irc"]["server"], config["irc"]["port"])
+    bot.register(config["irc"]["nick"])
+    bot.join(channel)
+
+    bot.listen()
+
+if __name__ == '__main__':
+    main()

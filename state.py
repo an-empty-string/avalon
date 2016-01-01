@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import math
 import copy
 import random
@@ -26,6 +27,7 @@ quests = {
     10: [3, 4, 4, 5, 5]
 }
 
+
 def dict_get_multi(d, keys):
     result = []
     for i in keys:
@@ -33,12 +35,15 @@ def dict_get_multi(d, keys):
             result.append(d[i])
     return result
 
+
 def get_roles(n_players):
     n_bad = math.ceil(n_players / 3)
     n_good = n_players - n_bad
     return bad_roles[:n_bad] + good_roles[:n_good]
 
+
 class AvalonGame:
+
     def __init__(self, players):
         self.players = copy.copy(players)
         self.roles = {}
@@ -235,14 +240,16 @@ class AvalonGame:
         self.state = "no_game"
         joined_players = []
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-#@sio.on('connected', namespace='/private')
-#@sio.on('connected', namespace='/public')
-#def connect():
+# @sio.on('connected', namespace='/private')
+# @sio.on('connected', namespace='/public')
+# def connect():
 #    emit('connect')
+
 
 @sio.on('game start request', namespace='/private')
 def start_game(player):
@@ -256,6 +263,7 @@ def start_game(player):
         game = AvalonGame(joined_players)
         game.assign_roles()
         game.next_quest()
+
 
 @sio.on('force game start request', namespace='/private')
 def force_start_game(args):
@@ -280,20 +288,24 @@ def join_game(player):
         joined_players.append(player)
         emit('join game', player, broadcast=True, namespace='/public')
 
+
 @sio.on('kill player request', namespace='/private')
 def kill_player(args):
     player, target = args
     game.do_assassin_kill(player, target)
+
 
 @sio.on('propose players', namespace='/private')
 def propose_players(args):
     player, players = args
     game.propose(player, players)
 
+
 @sio.on('vote request', namespace='/private')
 def vote(args):
     player, truefalse = args
     game.vote_on_questers(player, truefalse)
+
 
 @sio.on('qvote request', namespace='/private')
 def qvote(args):
@@ -302,4 +314,3 @@ def qvote(args):
 
 if __name__ == '__main__':
     sio.run(app, host="0.0.0.0")
-
