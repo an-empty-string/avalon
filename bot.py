@@ -2,13 +2,7 @@ from pyrcb import IRCBot
 from socketIO_client import SocketIO, BaseNamespace
 import threading
 import sys
-
 import yaml
-with open(sys.argv[1]) as f:
-    config = yaml.load(f)
-
-channel = config["irc"]["channel"]
-sio = SocketIO(config["state"]["host"], config["state"]["port"])
 
 
 class AvalonBot(IRCBot):
@@ -120,16 +114,28 @@ class PrivateNamespace(BaseNamespace):
         player, vote = args
         bot.send(player, "You voted to {} the quest.".format(vote))
 
+# FIXME: kill globals
+conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
+with open(conf_file) as f:
+    config = yaml.load(f)
+
+channel = config["irc"]["channel"]
+sio = SocketIO(config["state"]["host"], config["state"]["port"])
 
 bot = AvalonBot()
 public_ns = sio.define(PublicNamespace, '/public')
 private_ns = sio.define(PrivateNamespace, '/private')
 
-sio_t = threading.Thread(target=sio.wait)
-sio_t.start()
 
-bot.connect(config["irc"]["server"], config["irc"]["port"])
-bot.register(config["irc"]["nick"])
-bot.join(channel)
+def main():
+    sio_t = threading.Thread(target=sio.wait)
+    sio_t.start()
 
-bot.listen()
+    bot.connect(config["irc"]["server"], config["irc"]["port"])
+    bot.register(config["irc"]["nick"])
+    bot.join(channel)
+
+    bot.listen()
+
+if __name__ == '__main__':
+    main()
