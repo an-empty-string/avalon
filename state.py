@@ -1,11 +1,15 @@
 import math
 import copy
 import random
+import yaml
 from flask_socketio import SocketIO, emit
 from flask import Flask, render_template
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'FDBBE)fg0#$CFN*W)(GBF(WGFm0sxc90gf790'
+with open("config.yml") as f:
+    config = yaml.load(f)
+    app.config['SECRET_KEY'] = config["secret"]
+
 sio = SocketIO(app)
 game = None
 joined_players = []

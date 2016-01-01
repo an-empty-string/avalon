@@ -1,9 +1,14 @@
 from pyrcb import IRCBot
 from socketIO_client import SocketIO, BaseNamespace
 import threading
+import sys
 
-channel = '#tjcsl-avalon2'
-sio = SocketIO('localhost', 5000)
+import yaml
+with open(sys.argv[1]) as f:
+    config = yaml.load(f)
+
+channel = config["irc"]["channel"]
+sio = SocketIO(config["state"]["host"], config["state"]["port"])
 
 class AvalonBot(IRCBot):
     def on_message(self, message, nickname, channel, is_query):
@@ -117,8 +122,8 @@ private_ns = sio.define(PrivateNamespace, '/private')
 sio_t = threading.Thread(target=sio.wait)
 sio_t.start()
 
-bot.connect('chat.freenode.net', 6667)
-bot.register('cslavalon2')
+bot.connect(config["irc"]["server"], config["irc"]["port"])
+bot.register(config["irc"]["nick"])
 bot.join(channel)
 
 bot.listen()
