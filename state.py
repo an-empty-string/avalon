@@ -257,6 +257,19 @@ def start_game(player):
         game.assign_roles()
         game.next_quest()
 
+@sio.on('force game start request', namespace='/private')
+def force_start_game(args):
+    global game
+    player, players = args
+    if len(players) < 5:
+        emit('game start error', "The game must have at least five players.", broadcast=True, namespace='/public')
+    else:
+        emit('game start', players, broadcast=True, namespace='/public')
+        game = AvalonGame(players)
+        game.assign_roles()
+        game.next_quest()
+
+
 @sio.on('join game request', namespace='/private')
 def join_game(player):
     if player in joined_players:

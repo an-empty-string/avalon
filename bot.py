@@ -21,6 +21,8 @@ class AvalonBot(IRCBot):
                 private_ns.emit('join game request', nickname)
             elif message == "!start":
                 private_ns.emit('game start request', nickname)
+            elif message == "!tarts":
+                private_ns.emit('force game start request', message.split()[1:])
         else:
             if message == "yes":
                 private_ns.emit('vote request', [nickname, True])
