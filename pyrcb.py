@@ -45,6 +45,7 @@ class IRCBot(object):
     :param bool delay: Whether or not sent messages should be delayed to avoid
       server throttling or spam prevention.
     """
+
     def __init__(self, debug_print=False, print_function=None, delay=True):
         self.debug_print = debug_print
         self.print_function = print_function or safe_print
@@ -690,6 +691,7 @@ class IDefaultDict(OrderedDict):
 
     .. _IRC case rules: https://tools.ietf.org/html/rfc2812#section-2.2
     """
+
     def __init__(self, default_factory=None, *args, **kwargs):
         super(IDefaultDict, self).__init__(*args, **kwargs)
         self.default_factory = default_factory
