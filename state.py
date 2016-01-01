@@ -255,18 +255,6 @@ def authenticated_only(f):
 def index():
     return render_template('index.html')
 
-# @sio.on('connected', namespace='/private')
-# @sio.on('connected', namespace='/public')
-# def connect():
-#    emit('connect')
-
-@app.route('/login', methods=['POST'])
-def login():
-    if request.form['apikey'] == config['secret']:
-        user = APIUser()
-        login_user(user)
-    abort(400)
-
 @sio.on('game start request', namespace='/private')
 @authenticated_only
 def start_game(player):
