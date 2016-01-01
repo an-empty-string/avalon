@@ -356,7 +356,7 @@ class SocketIO(EngineIO):
         self._namespace_by_path[path] = namespace = Namespace(self, path)
         if path:
             self.connect(path)
-            #self.wait(for_connect=True)
+            # self.wait(for_connect=True)
         return namespace
 
     def on(self, event, callback, path=''):

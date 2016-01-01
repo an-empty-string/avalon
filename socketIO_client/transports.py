@@ -11,7 +11,8 @@ from .exceptions import ConnectionError, TimeoutError
 from .parsers import (
     encode_engineIO_content, decode_engineIO_content,
     format_packet_text, parse_packet_text)
-from .symmetries import format_query, memoryview, parse_url
+from six.moves.urllib import urlencode as format_query
+from six.moves.urlparse import urlparse as parse_url
 
 
 if not hasattr(websocket, 'create_connection'):
@@ -129,7 +130,7 @@ class WebsocketTransport(AbstractTransport):
                     proxy_url_pack.username, proxy_url_pack.password)
         if http_session.verify:
             if http_session.cert:  # Specify certificate path on disk
-                if isinstance(http_session.cert, basestring):
+                if isinstance(http_session.cert, six.string_types):
                     kw['ca_certs'] = http_session.cert
                 else:
                     kw['ca_certs'] = http_session.cert[0]
