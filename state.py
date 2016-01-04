@@ -263,6 +263,8 @@ def start_game(player):
         emit('game start error', "You have to join the game before you can start it.", broadcast=True, namespace='/public')
     elif len(joined_players) < 5:
         emit('game start error', "The game must have at least five players.", broadcast=True, namespace='/public')
+    elif game.state != "no_game":
+        emit('game start error', "The game is already ongoing.", broadcast=True, namespace='/public')
     else:
         emit('game start', joined_players, broadcast=True, namespace='/public')
         game = AvalonGame(joined_players)
