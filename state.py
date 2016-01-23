@@ -211,7 +211,7 @@ class AvalonGame:
             self.next_quest()
 
     def do_evil_win(self):
-        sio.emit('game over', 'bad', namespace='/public')
+        sio.emit('game over', 'The bad team won.', namespace='/public')
         self.do_game_over()
 
     def do_assassin_pick(self):
@@ -233,11 +233,12 @@ class AvalonGame:
                 self.do_good_win()
 
     def do_good_win(self):
-        sio.emit('game over', 'good', namespace='/public')
+        sio.emit('game over', 'The good team won.', namespace='/public')
         self.do_game_over()
 
     def do_game_over(self):
         global joined_players
+        sio.emit('game over', " ".join(["The {} was {}.".format(*i) for i in self.roles.items()]))
         self.state = "no_game"
         joined_players = []
 
@@ -251,6 +252,18 @@ def authenticated_only(f):
             return f(*args, **kwargs)
     return wrapped
 
+def game_req(errtype):
+    def wrapper(f):
+        @functools.wraps(f)
+        def wrapped(*args, **kwargs):
+            if game is None:
+                emit(errtype, "There is no game running.", broadcast=True, namespace='/public')
+                return
+            print("calling original function")
+            f(*args, **kwargs)
+        return wrapped
+    return wrapper
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -263,7 +276,7 @@ def start_game(player):
         emit('game start error', "You have to join the game before you can start it.", broadcast=True, namespace='/public')
     elif len(joined_players) < 5:
         emit('game start error', "The game must have at least five players.", broadcast=True, namespace='/public')
-    elif game.state != "no_game":
+    elif game is not None and game.state != "no_game":
         emit('game start error', "The game is already ongoing.", broadcast=True, namespace='/public')
     else:
         emit('game start', joined_players, broadcast=True, namespace='/public')
@@ -293,6 +306,8 @@ def join_game(player):
         emit('join game error', "You're already in the game, {}.".format(player), broadcast=True, namespace='/public')
     elif len(joined_players) >= 10:
         emit('join game error', "There are too many players.", broadcast=True, namespace='/public')
+    elif game is not None and game.state != "no_game":
+        emit('join game error', "Game already running.", broadcast=True, namespace='/public')
     else:
         joined_players.append(player)
         emit('join game', player, broadcast=True, namespace='/public')
@@ -300,6 +315,7 @@ def join_game(player):
 
 @sio.on('kill player request', namespace='/private')
 @authenticated_only
+@game_req("target error")
 def kill_player(args):
     player, target = args
     game.do_assassin_kill(player, target)
@@ -307,13 +323,14 @@ def kill_player(args):
 
 @sio.on('propose players', namespace='/private')
 @authenticated_only
+@game_req("proposal error")
 def propose_players(args):
     player, players = args
     game.propose(player, players)
 
-
 @sio.on('vote request', namespace='/private')
 @authenticated_only
+@game_req("vote error")
 def vote(args):
     player, truefalse = args
     game.vote_on_questers(player, truefalse)
@@ -321,6 +338,7 @@ def vote(args):
 
 @sio.on('qvote request', namespace='/private')
 @authenticated_only
+@game_req("qvote error")
 def qvote(args):
     player, truefalse = args
     game.do_quest_vote(player, truefalse)

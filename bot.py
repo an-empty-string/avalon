@@ -84,12 +84,15 @@ class PublicNamespace(BaseNamespace):
         bot.send(channel, "The votes are in! The quest {}ed with {} votes to fail.".format(res, fail_votes))
 
     def on_game_over(self, result):
-        bot.send(channel, "Game over! The {} guys win!".format(result))
+        bot.send(channel, result)
 
     def on_pick_target(self, player):
         bot.send(channel, "{}, please choose a target with !kill player.".format(player))
 
     def on_target_error(self, message):
+        bot.send(channel, message)
+
+    def on_game_over(self, message):
         bot.send(channel, message)
 
 
