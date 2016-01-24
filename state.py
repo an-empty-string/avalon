@@ -68,8 +68,12 @@ class AvalonGame:
         article = "a" if role.endswith("guy") else "the"
         yourrole_text = "You are {} {} ({}).".format(article, role.title(), team)
         extra_text = "You have no special information."
-        if role in ["assassin", "mordred", "morgana", "merlin"]:
+        if role in ["assassin", "mordred", "morgana"]:
             extra_text = "The bad team is: {}.".format(", ".join(self.teams["bad"]))
+        elif role == "merlin":
+            badteam = self.teams["bad"]
+            badteam.remove(self.roles["mordred"])
+            extra_text = "The bad team contains: {}.".format(", ".join(badteam))
         elif role == "percival":
             if "morgana" in self.roles:
                 extra_text = "The Merlin and Morgana are: {}, {}.".format(self.roles["merlin"], self.roles["morgana"])
@@ -238,7 +242,7 @@ class AvalonGame:
 
     def do_game_over(self):
         global joined_players
-        sio.emit('game over', " ".join(["The {} was {}.".format(*i) for i in self.roles.items()]))
+        sio.emit('game over', " ".join(["The {} was {}.".format(*i) for i in self.roles.items()]), namespace='/public')
         self.state = "no_game"
         joined_players = []
 

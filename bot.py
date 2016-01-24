@@ -5,6 +5,9 @@ import threading
 import sys
 import yaml
 
+conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
+with open(conf_file) as f:
+    config = yaml.load(f)
 
 class AvalonBot(IRCBot):
 
@@ -16,6 +19,7 @@ class AvalonBot(IRCBot):
                 private_ns.emit('kill player request', [nickname, message.split()[1]])
             elif message == "!join":
                 private_ns.emit('join game request', nickname)
+                self.send("ChanServ", "voice {} {}".format(config['irc']['channel'], nickname))
             elif message == "!start":
                 private_ns.emit('game start request', nickname)
             elif message.startswith("!tarts "):
@@ -119,9 +123,6 @@ class PrivateNamespace(BaseNamespace):
         bot.send(player, "You voted to {} the quest.".format(vote))
 
 # FIXME: kill globals
-conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
-with open(conf_file) as f:
-    config = yaml.load(f)
 
 channel = config["irc"]["channel"]
 sio = SocketIO(config["state"]["host"], config["state"]["port"], headers={"Authentication":config["secret"]})
