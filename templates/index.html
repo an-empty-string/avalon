@@ -72,6 +72,7 @@
             socket2.on('game start', function(players){
                 allplayers = players;
                 var count = players.length;
+                qindex = 1;
                 $('#nogame').hide();
                 $('#rounds').show();
                 $('#players').show();
@@ -120,6 +121,9 @@
                 var no_votes = args[2];
                 allplayers.forEach(function(p){
                     $('#p-'+p+'-badge').hide();
+                });
+                allplayers.forEach(function(p){
+                    $('#p-'+p).removeClass('lighten-2 green red');
                 });
                 yes_votes.forEach(function(p){
                     $('#p-'+p).addClass('green lighten-2');
