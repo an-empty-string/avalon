@@ -13,17 +13,16 @@ class AvalonBot(IRCBot):
 
     def on_message(self, message, nickname, channel, is_query):
         if not is_query:
-            if message.startswith("!propose "):
+            if message.startswith("!p"):
                 private_ns.emit('propose players', [nickname, message.split()[1:]])
             elif message.startswith("!kill "):
                 private_ns.emit('kill player request', [nickname, message.split()[1]])
-            elif message == "!join":
+            elif message.startswith("!j"):
                 private_ns.emit('join game request', nickname)
-                self.send("ChanServ", "voice {} {}".format(config['irc']['channel'], nickname))
+            elif message.startswith("!fjoin "):
+                private_ns.emit('join game request', message.split()[1])
             elif message == "!start":
                 private_ns.emit('game start request', nickname)
-            elif message.startswith("!tarts "):
-                private_ns.emit('force game start request', [nickname, message.split()[1:]])
         else:
             if message == "yes":
                 private_ns.emit('vote request', [nickname, True])
