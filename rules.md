@@ -73,3 +73,4 @@ The bot accepts several commands:
 ## During a quest
 - If you are on the quest, private message the bot with **pass** or **fail** to
   vote.
+
