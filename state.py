@@ -28,7 +28,6 @@ quests = {
     10: [3, 4, 4, 5, 5]
 }
 
-
 def dict_get_multi(d, keys):
     result = []
     for i in keys:
@@ -61,6 +60,7 @@ class AvalonGame:
         self.quest_fail_votes = 0
         self.successes = 0
         self.failures = 0
+        self.cqfv = 0
 
     def get_role_text(self, player):
         role = self.player_roles[player]
@@ -76,7 +76,9 @@ class AvalonGame:
             extra_text = "The bad team contains: {}.".format(", ".join(badteam))
         elif role == "percival":
             if "morgana" in self.roles:
-                extra_text = "The Merlin and Morgana are: {}, {}.".format(self.roles["merlin"], self.roles["morgana"])
+                to_send = [self.roles["merlin"], self.roles["morgana"]]
+                random.shuffle(to_send)
+                extra_text = "The Merlin and Morgana are: {}, {}.".format(*to_send)
             else:
                 extra_text = "The Merlin is: {}.".format(self.roles["merlin"])
 
@@ -157,9 +159,15 @@ class AvalonGame:
                 sio.emit('vote finish', [success, yes_votes, no_votes], namespace='/public')
                 if success:
                     self.state = "quester_vote"
+                    self.cqfv = 0
                     self.do_quest()
                 else:
-                    self.next_quest_leader()
+                    self.cqfv += 1
+                    if self.cqfv >= 5:
+                        self.do_evil_win()
+                    else:
+                        sio.emit('current quest failed votes', self.cqfv, namespace='/public')
+                        self.next_quest_leader()
 
     def do_quest(self):
         self.quest_fail_votes = 0
@@ -179,7 +187,10 @@ class AvalonGame:
         elif player in self.questers_voted:
             sio.emit('qvote error', [player, "You've already voted on this quest."], namespace='/private')
         elif player in self.teams["good"] and not affirmative:
-            sio.emit('qvote error', [player, "You can't vote to fail, you're on the good team!"], namespace='/private')
+            sio.emit('qvote error', [player, "You can't vote to fail, you're on the good team! Voting to pass instead."], namespace='/private')
+            self.questers_voted.append(player)
+            sio.emit('qvote placed', player, namespace='/public')
+            sio.emit('qvote confirmation', [player, 'pass'], namespace='/private')
         else:
             self.questers_voted.append(player)
             sio.emit('qvote placed', player, namespace='/public')
@@ -199,7 +210,7 @@ class AvalonGame:
             votes_to_fail = 1
 
         status = self.quest_fail_votes < votes_to_fail
-        self.history.append("History: Quest with {}: {}ed with {} votes to fail.".format(", ".join(self.questers), "pass" if status else "fail", self.quest_fail_votes))
+        self.history.append([list(self.questers), "pass" if status else "fail", self.quest_fail_votes, self.players[self.current_quest_leader]])
         sio.emit('qvote finish', ["pass" if status else "fail", self.quest_fail_votes], namespace='/public')
 
         if status:
@@ -242,7 +253,7 @@ class AvalonGame:
 
     def do_game_over(self):
         global joined_players
-        sio.emit('game over', " ".join(["The {} was {}.".format(*i) for i in self.roles.items()]), namespace='/public')
+        sio.emit('game over', " ".join(["{} was {}.".format(*i) for i in self.player_roles.items()]), namespace='/public')
         self.state = "no_game"
         joined_players = []
 
@@ -288,21 +299,6 @@ def start_game(player):
         game.assign_roles()
         game.next_quest()
 
-
-@sio.on('force game start request', namespace='/private')
-@authenticated_only
-def force_start_game(args):
-    global game
-    player, players = args
-    if len(players) < 5:
-        emit('game start error', "The game must have at least five players.", broadcast=True, namespace='/public')
-    else:
-        emit('game start', players, broadcast=True, namespace='/public')
-        game = AvalonGame(players)
-        game.assign_roles()
-        game.next_quest()
-
-
 @sio.on('join game request', namespace='/private')
 @authenticated_only
 def join_game(player):
@@ -314,8 +310,18 @@ def join_game(player):
         emit('join game error', "Game already running.", broadcast=True, namespace='/public')
     else:
         joined_players.append(player)
-        emit('join game', player, broadcast=True, namespace='/public')
+        emit('join game', [player, joined_players], broadcast=True, namespace='/public')
 
+@sio.on('leave game request', namespace='/private')
+@authenticated_only
+def leave_game(player):
+    if player not in joined_players:
+        emit('leave game error', "You're not playing.".format(player), broadcast=True, namespace='/public')
+    elif game is not None and game.state != "no_game":
+        emit('leave game error', "Game already started.", broadcast=True, namespace='/public')
+    else:
+        joined_players.remove(player)
+        emit('leave game', [player, joined_players], broadcast=True, namespace='/public')
 
 @sio.on('kill player request', namespace='/private')
 @authenticated_only

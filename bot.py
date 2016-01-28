@@ -9,18 +9,42 @@ conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
 with open(conf_file) as f:
     config = yaml.load(f)
 
+admins = ["fwilson"]
+
+def plural(n, thing, interptext="", plural_form=None):
+    if not interptext:
+        interptext = " "
+    else:
+        interptext = " " + interptext + " "
+    if n == 1:
+        return "1{}{}".format(interptext, thing)
+    if not plural_form:
+        return "{}{}{}s".format(n, interptext, thing)
+    return "{}{}{}".format(n, interptext, plural_form)
+
+def lf(l):
+    if len(l) == 1:
+        return l[0]
+    if len(l) == 2:
+        return "{} and {}".format(*l)
+    return "{}, and {}".format(", ".join(l[:-1]), l[-1])
+
 class AvalonBot(IRCBot):
 
     def on_message(self, message, nickname, channel, is_query):
         if not is_query:
-            if message.startswith("!p"):
+            if message.startswith("!propose ") or message.startswith("!pick "):
                 private_ns.emit('propose players', [nickname, message.split()[1:]])
             elif message.startswith("!kill "):
                 private_ns.emit('kill player request', [nickname, message.split()[1]])
-            elif message.startswith("!j"):
+            elif message == "!j" or message == "!join":
                 private_ns.emit('join game request', nickname)
-            elif message.startswith("!fjoin "):
+            elif message.startswith("!fjoin ") and nickname in admins:
                 private_ns.emit('join game request', message.split()[1])
+            elif message == "!leave" or message == "!part":
+                private_ns.emit("leave game request", nickname)
+            elif message.startswith("!kick ") and nickname in admins:
+                private_ns.emit("leave game request", message.split()[1])
             elif message == "!start":
                 private_ns.emit('game start request', nickname)
         else:
@@ -45,16 +69,24 @@ class PublicNamespace(BaseNamespace):
     def on_join_game_error(self, message):
         bot.send(channel, message)
 
-    def on_join_game(self, player):
-        bot.send(channel, "Welcome to the game, {}!".format(player))
+    def on_leave_game_error(self, message):
+        bot.send(channel, message)
+
+    def on_join_game(self, args):
+        player, players = args
+        bot.send(channel, "Welcome to the game, {}! {}.".format(player, plural(len(players), "player")))
+
+    def on_leave_game(self, args):
+        player, players = args
+        bot.send(channel, "Bye, {}! {} left.".format(player, plural(len(players), "player")))
 
     def on_numeric_history(self, args):
         successes, failures = args
-        bot.send(channel, "There have been {} successful quests and {} failed quests.".format(successes, failures))
+        bot.send(channel, "There have been {} and {}.".format(plural(successes, "quest", "successful"), plural(failures, "quest", "failed")))
 
     def on_history(self, history):
-        for element in history:
-            bot.send(channel, element)
+        for questers, status, votes, proposed in history:
+            bot.send(channel, "History: Quest with {}: {}ed with {} to fail. Proposed by {}.".format(lf(questers), status, plural(votes, "vote"), proposed))
 
     def on_proposal_request(self, args):
         quest_leader, quest_size, players_text = args
@@ -65,7 +97,7 @@ class PublicNamespace(BaseNamespace):
 
     def on_proposed_team(self, args):
         player, players = args
-        bot.send(channel, "The proposed quest team is: {}. Vote by /msg'ing me 'yes' or 'no'.".format(", ".join(players)))
+        bot.send(channel, "The proposed quest team is: {}. Vote by /msg'ing me 'yes' or 'no'.".format(lf(players)))
 
     def on_vote_confirmation(self, player):
         bot.send(player, "Okay, your vote has been recorded.")
@@ -75,16 +107,16 @@ class PublicNamespace(BaseNamespace):
         success, yes_votes, no_votes = args
         bot.send(channel, "The votes are in! The vote was{} successful.".format("" if success else " not"))
         if yes_votes:
-            bot.send(channel, "Yes votes: {}".format(", ".join(yes_votes)))
+            bot.send(channel, "Yes votes: {}".format(lf(yes_votes)))
         if no_votes:
-            bot.send(channel, "No votes: {}".format(", ".join(no_votes)))
+            bot.send(channel, "No votes: {}".format(lf(no_votes)))
 
     def on_qvote_placed(self, player):
         bot.send(channel, "{} has completed the quest.".format(player))
 
     def on_qvote_finish(self, args):
         res, fail_votes = args
-        bot.send(channel, "The votes are in! The quest {}ed with {} votes to fail.".format(res, fail_votes))
+        bot.send(channel, "The votes are in! The quest {}ed with {} to fail.".format(res, plural(fail_votes, "vote")))
 
     def on_game_over(self, result):
         bot.send(channel, result)
@@ -97,6 +129,9 @@ class PublicNamespace(BaseNamespace):
 
     def on_game_over(self, message):
         bot.send(channel, message)
+
+    def on_current_quest_failed_votes(self, message):
+        bot.send(channel, "{} have failed for this quest.".format(plural(message, "proposal")))
 
 
 class PrivateNamespace(BaseNamespace):
