@@ -124,8 +124,9 @@ class AvalonGame:
     def propose(self, player, players):
         if self.state != "propose_who":
             return
+        players = list(set(players))
 
-        if len(set(players)) != quests[len(self.players)][self.quest]:
+        if len(players) != quests[len(self.players)][self.quest]:
             sio.emit('proposal error', "SIKE, THAT'S THE WRONG NUMBER", namespace='/public')
         elif player != self.players[self.current_quest_leader]:
             sio.emit('proposal error', "{}: You're not the quest leader. Maybe next time.".format(player), namespace='/public')
