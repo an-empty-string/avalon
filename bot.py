@@ -9,7 +9,8 @@ conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
 with open(conf_file) as f:
     config = yaml.load(f)
 
-admins = ["fwilson"]
+admins = ["fwilson", "sdrodge"]
+denied = {}
 
 def plural(n, thing, interptext="", plural_form=None):
     if not interptext:
@@ -32,21 +33,39 @@ def lf(l):
 class AvalonBot(IRCBot):
 
     def on_message(self, message, nickname, channel, is_query):
+        if message.startswith("!"):
+            if nickname in denied:
+                for i in denied[nickname]:
+                    if i in message:
+                        bot.send(channel, "{}: lol nope".format(nickname))
+                        return
         if not is_query:
             if message.startswith("!propose ") or message.startswith("!pick "):
                 private_ns.emit('propose players', [nickname, message.split()[1:]])
             elif message.startswith("!kill "):
                 private_ns.emit('kill player request', [nickname, message.split()[1]])
-            elif message == "!j" or message == "!join":
+            elif message == "!join":
                 private_ns.emit('join game request', nickname)
             elif message.startswith("!fjoin ") and nickname in admins:
                 private_ns.emit('join game request', message.split()[1])
-            elif message == "!leave" or message == "!part":
+            elif message == "!leave":
                 private_ns.emit("leave game request", nickname)
             elif message.startswith("!kick ") and nickname in admins:
                 private_ns.emit("leave game request", message.split()[1])
             elif message == "!start":
                 private_ns.emit('game start request', nickname)
+            elif message == "!help":
+                bot.send(channel, "Rules are at https://github.com/fwilson42/avalon/blob/master/rules.md | During a game: \x02!propose\x02 a quest team, \x02!kill\x02 a player as assassin, vote \x02yes\x02 or \x02no\x02 on a proposed quest team in PM, \x02pass\x02 or \x02fail\x02 a quest. | Before a game: \x02!join\x02 the game or \x02!leave\x02 it. \x02!start\x02 once you have enough players.")
+            elif message.startswith("!deny ") and nickname in admins:
+                args = message.split()
+                if args[1] not in denied:
+                    denied[args[1]] = []
+                denied[args[1]].append(args[2])
+                bot.send(channel, "{} is now denied {}".format(args[1], lf(denied[args[1]])))
+            elif message.startswith("!allowall ") and nickname in admins:
+                args = message.split()
+                denied[args[1]] = []
+                bot.send(channel, "ok!")
         else:
             if message == "yes":
                 private_ns.emit('vote request', [nickname, True])
