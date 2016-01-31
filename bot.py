@@ -67,6 +67,7 @@ class AvalonBot(IRCBot):
                 denied[args[1]] = []
                 bot.send(channel, "ok!")
         else:
+            message = message.lower()
             if message == "yes":
                 private_ns.emit('vote request', [nickname, True])
             elif message == "no":
