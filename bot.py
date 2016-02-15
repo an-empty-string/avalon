@@ -9,7 +9,7 @@ conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
 with open(conf_file) as f:
     config = yaml.load(f)
 
-admins = ["fwilson", "sdrodge"]
+admins = ["fwilson", "sdrodge", "okulkarni"]
 denied = {}
 
 def plural(n, thing, interptext="", plural_form=None):
