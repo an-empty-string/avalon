@@ -11,8 +11,11 @@ app = Flask(__name__)
 with open("config.yml") as f:
     config = yaml.load(f)
     app.config['SECRET_KEY'] = config["secret"]
+<<<<<<< HEAD
     hostname = config["state"]["host"]
     portnum = config["state"]["port"]
+=======
+>>>>>>> a6106fd1ccba846ef77576dcb1333761a1488f46
 
 sio = SocketIO(app)
 game = None
@@ -357,4 +360,8 @@ def qvote(args):
     game.do_quest_vote(player, truefalse)
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     sio.run(app, host=hostname, port=portnum)
+=======
+    sio.run(app, host="0.0.0.0")
+>>>>>>> a6106fd1ccba846ef77576dcb1333761a1488f46

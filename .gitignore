@@ -1,4 +1,7 @@
 config.yml
 __pycache__
+<<<<<<< HEAD
 *.pyc
 venv
+=======
+>>>>>>> a6106fd1ccba846ef77576dcb1333761a1488f46
