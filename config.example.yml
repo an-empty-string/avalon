@@ -1,0 +1,11 @@
+state:
+    host: localhost
+    port: 5000
+
+irc:
+    nick: cslavalon
+    channel: "#tjcsl-avalon"
+    server: chat.freenode.net
+    port: 6667
+
+secret: super secure secret

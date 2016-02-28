@@ -1,0 +1,197 @@
+<html>
+    <head>
+        <title>TJ CSL Avalon</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/css/materialize.min.css">
+        <style>
+            span.badge {
+                font-weight:300;
+                font-size: 0.8rem;
+                color: #fff;
+                background-color: #26a69a;
+                border-radius: 2px;
+            }
+        </style>
+
+    </head>
+    <body>
+		<div class="navbar-fixed">
+		    <nav class="blue lighten-1">
+		        <div class="nav-wrapper container">
+		            <a href="#!" class="brand-logo">&nbsp;TJ CSL Avalon</a>
+		        </div>
+		    </nav>
+		</div>
+        <div class="container">
+            <div class="row">
+                <div class="valign-wrapper col s10 offset-s2" id="nogame">
+                    <h2 class="valign">There is no current game, or one hasn't started since you opened this page.</h2>
+                </div>
+                <div class="valign-wrapper col s10 offset-s2" id="gameheader">
+                    <h2 class="valign"></h2>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s4" id="players">
+                    <h3 class="blue-text lighten-1">Players</h3>
+                    <ul class="collection" id="players-collection">
+                    </ul>
+                </div>
+                <div class="col s4" id="rounds">
+                    <h3 class="blue-text lighten-1">Quests</h3>
+                    <ul class="collection" id="rounds-collection">
+                    </ul>
+                </div>
+                <div class="col s4" id="voting">
+                    <h3 class="blue-text lighten-1" id="voting-header">Voting</h3>
+                    <ul class="collection" id="voting-collection">
+                    </ul>
+                </div>
+            </div>
+
+	    </div>	
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.5/js/materialize.min.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+        <script type="text/javascript" charset="utf-8">
+            var qindex = 1;
+            var currentquest = [];
+            var quests = [];
+            var allplayers = [];
+            quests[5] =  [2,3,2,3,3];
+            quests[6] =  [2,3,4,3,4];
+            quests[7] =  [2,3,3,4,4];
+            quests[8] =  [3,4,4,5,5];
+            quests[9] =  [3,4,4,5,5];
+            quests[10] = [3,4,4,5,5];
+            
+        	var socket2 = io.connect('http://' + document.domain + ':' + location.port + '/public');
+            $('#rounds').hide();
+            $('#gameheader').hide();
+            $('#players').hide();
+            $('#voting').hide();
+            socket2.on('game start', function(players){
+                allplayers = players;
+                var count = players.length;
+                qindex = 1;
+                $('#nogame').hide();
+                $('#rounds').show();
+                $('#players').show();
+                $('#voting').show();
+
+                $('#gameheader').html(count+' Player Avalon Game');
+                $('#rounds-collection').empty();
+                [1,2,3,4,5].forEach(function(i){
+                    $('#rounds-collection').append('<li class="collection-item" id="q'+i+'">'+quests[count][i-1]+'</li>');
+                });
+
+                $('#players-collection').empty();
+                players.forEach(function(p){
+                    $('#players-collection').append('<li class="collection-item" id="p-'+p+'">'+p+'<span class="badge" style="display: none;" id="p-'+p+'-badge"></span></li>');
+                });
+
+            });
+
+            socket2.on('proposal request', function(args){
+                var quest_leader = args[0];
+                var quest_size = args[1];
+                var players_text = args[2];
+                $('#p-'+quest_leader+'-badge').css('display','inline');
+                $('#p-'+quest_leader+'-badge').html('Picking Team');
+            });
+            
+            socket2.on('proposed team', function(args){
+                var proposer = args[0];
+                var players = args[1];
+                currentquest = players;
+                $('#voting-header').html('Proposed Team');
+                $('#voting-collection').empty();
+                players.forEach(function(p){
+                    $('#voting-collection').append('<li class="collection-item" id="t-'+p+'">'+p+'<span class="badge" style="display: none;" id="t-'+p+'-badge"></span></li>');
+                });
+            });
+
+            socket2.on('vote confirmation', function(player){
+                $('#p-'+player+'-badge').css('display', 'inline');
+                $('#p-'+player+'-badge').html('Voted');
+            });
+
+            socket2.on('vote finish', function(args){
+                var success = args[0];
+                var yes_votes = args[1];
+                var no_votes = args[2];
+                allplayers.forEach(function(p){
+                    $('#p-'+p+'-badge').hide();
+                });
+                allplayers.forEach(function(p){
+                    $('#p-'+p).removeClass('lighten-2 green red');
+                });
+                yes_votes.forEach(function(p){
+                    $('#p-'+p).addClass('green lighten-2');
+                });
+                no_votes.forEach(function(p){
+                    $('#p-'+p).addClass('red lighten-2');
+                });
+                if(!success) {
+                    $('#voting-collection').empty();
+                    $('#voting-header').html('Voting');
+                }
+                else {
+                    $('#q'+qindex).html(quests[allplayers.length][qindex-1] + ': ' + currentquest.join(', '));
+                    $('#voting-header').html('Quest Team');
+                }
+            });
+
+            socket2.on('qvote placed', function(player){
+                $('#t-'+player+'-badge').css('display','inline');
+                $('#t-'+player+'-badge').html('Voted');
+            });
+
+            socket2.on('qvote finish', function(args){
+                var result = args[0];
+                var votecount = args[1];
+                var color;
+                $('#voting-collection').empty();
+                if(result == "pass") {
+                    color = "green";
+                }
+                else {
+                    color = "red";
+                    $('#q'+qindex).append(' ('+votecount+' fails)');
+                }
+
+                allplayers.forEach(function(p){
+                    $('#p-'+p).removeClass('lighten-2 red green');
+                });
+
+                $('#q'+qindex).addClass(color + ' lighten-2');
+                $('#voting-header').html('Voting');
+                qindex++;
+            });
+
+            socket2.on('pick target', function(player){
+                $('#p-'+player+'-badge').css('display','inline');
+                $('#p-'+player+'-badge').html('Assassin');
+            });
+
+            function reset(){
+                $('#gameheader').hide();
+                $('#nogame').show();
+            }
+
+            socket2.on('game over', function(result){
+                $('#rounds').hide();
+                $('#players').hide();
+                $('#voting').hide();
+                $('#gameheader').show();
+
+                $('#gameheader').html('The '+result+' team has won!');
+
+                qindex = 1;
+
+                setTimeout(reset, 15000);
+            });
+            
+
+        </script>
+    </body>
+</html>    
