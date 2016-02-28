@@ -4,13 +4,10 @@ from socketIO_client import SocketIO, BaseNamespace
 import threading
 import sys
 import yaml
-<<<<<<< HEAD
 import subprocess as sp
 import os
 
 state = sp.Popen(['python','state.py'])
-=======
->>>>>>> a6106fd1ccba846ef77576dcb1333761a1488f46
 
 conf_file = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
 with open(conf_file) as f:
@@ -73,12 +70,9 @@ class AvalonBot(IRCBot):
                 args = message.split()
                 denied[args[1]] = []
                 bot.send(channel, "ok!")
-<<<<<<< HEAD
             elif message == '!restart':
                 sp.Popen.terminate(state)
                 os.execl(sys.executable, sys.executable, *sys.argv)
-=======
->>>>>>> a6106fd1ccba846ef77576dcb1333761a1488f46
         else:
             message = message.lower()
             if message == "yes":
