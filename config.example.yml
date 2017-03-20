@@ -1,7 +1,7 @@
 state:
     host: localhost
     port: 5000
-
+    run_from_bot: False
 irc:
     nick: cslavalon
     channel: "#tjcsl-avalon"
